@@ -19,17 +19,42 @@ const users = [
 //     res.json({msg: `Hello ${nome}`})
 // })
 
+// Middleware global
+server.use((req, res, next) => {
+    console.time('Request')
+    console.log(`${req.method} URL: ${req.url}`)
+    next()
+    console.timeEnd('Request')
+})
+
+// Middleware local
+const checkUserExists = (req, res, next) => {
+    if (! req.body.name) {
+        return res.status(400).json({ error: 'User name is required' });
+    }
+
+    return next()
+}
+
+const checkUserInArray = (req, res, next) => {
+    if (! users[req.params.index]) {
+        return res.status(400).json({ error: 'User does not exist' });
+    }
+
+    return next()
+}
+
 server.get('/users', (req, res) => {
     return res.json(users)
 })
 
-server.get('/users/:id', (req, res) => {
-    const { id } = req.params
+server.get('/users/:index', checkUserInArray, (req, res) => {
+    const { index } = req.params
 
-    return res.json(users[id])
+    return res.json(users[index])
 })
 
-server.post('/users', (req, res) => {
+server.post('/users', checkUserExists, (req, res) => {
     const { name } = req.body
 
     users.push(name)
@@ -37,7 +62,7 @@ server.post('/users', (req, res) => {
     return res.json(users)
 })
 
-server.put('/users/:index', (req, res) => {
+server.put('/users/:index', checkUserExists, checkUserInArray, (req, res) => {
     const { index } = req.params
     const { name } = req.body
 
@@ -46,7 +71,7 @@ server.put('/users/:index', (req, res) => {
     return res.json(users)
 })
 
-server.delete('/users/:index', (req, res) => {
+server.delete('/users/:index', checkUserInArray, (req, res) => {
     const { index } = req.params
 
     users.splice(index, 1)
